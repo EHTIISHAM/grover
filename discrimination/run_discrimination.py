@@ -21,14 +21,14 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.lib.io import file_io
+#from tensorflow.python.lib.io import file_io
 
 from lm.dataloader import classification_convert_examples_to_features, classification_input_fn_builder
 from lm.modeling import classification_model_fn_builder, GroverConfig
 from lm.utils import _save_np
 from sample.encoder import get_encoder
 
-flags = tf.flags
+flags = tf.compat.v1.flags
 
 FLAGS = flags.FLAGS
 

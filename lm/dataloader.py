@@ -19,7 +19,7 @@ import tensorflow as tf
 
 def _decode_record(record, name_to_features):
     """Decodes a record to a TensorFlow example."""
-    example = tf.parse_single_example(record, name_to_features)
+    example = tf.compat.v1.parse_single_example(record, name_to_features)
 
     # tf.Example only supports tf.int64, but the TPU only supports tf.int32.
     # So cast all int64 to int32.
@@ -42,7 +42,7 @@ def input_fn_builder(input_files,
         """The actual input function."""
         batch_size = params["batch_size"]
         name_to_features = {
-            "input_ids": tf.FixedLenFeature([seq_length + 1], tf.int64),
+            "input_ids": tf.io.FixedLenFeature([seq_length + 1], tf.int64),
         }
 
         # For training, we want a lot of parallel reading and shuffling.
@@ -57,6 +57,7 @@ def input_fn_builder(input_files,
 
             # `sloppy` mode means that the interleaving is not exact. This adds
             # even more randomness to the training pipeline.
+            # tf.data.experimental.parallel_interleave will be removed in future versions need to use interleave instead
             d = d.apply(
                 tf.data.experimental.parallel_interleave(
                     tf.data.TFRecordDataset,
@@ -91,13 +92,13 @@ def classification_convert_examples_to_features(
         chop_from_front_if_needed=True):
     """Convert a set of `InputExample`s to a TFRecord file."""
 
-    writer = tf.python_io.TFRecordWriter(output_file)
+    writer = tf.io.TFRecordWriter(output_file)
 
     label_map = {label: i for i, label in enumerate(labels)}
 
     for (ex_index, example) in enumerate(examples):
         if ex_index % 10000 == 0:
-            tf.logging.info("Writing example %d of %d" % (ex_index, len(examples)))
+            tf.compat.v1.logging.info("Writing example %d of %d" % (ex_index, len(examples)))
 
         # begin_summary is our [CLS] token
         tokens = example['ids'] + [encoder.begin_summary]
@@ -134,9 +135,9 @@ def classification_input_fn_builder(input_file, seq_length, is_training,
     """Creates an `input_fn` closure to be passed to TPUEstimator."""
 
     name_to_features = {
-        "input_ids": tf.FixedLenFeature([seq_length], tf.int64),
-        "label_ids": tf.FixedLenFeature([], tf.int64),
-        "is_real_example": tf.FixedLenFeature([], tf.int64),
+        "input_ids": tf.io.FixedLenFeature([seq_length], tf.int64),
+        "label_ids": tf.io.FixedLenFeature([], tf.int64),
+        "is_real_example": tf.io.FixedLenFeature([], tf.int64),
     }
 
     def input_fn(params):
