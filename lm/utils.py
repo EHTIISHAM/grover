@@ -18,6 +18,7 @@ import re
 
 import six
 import tensorflow as tf
+import tensorflow.compat.v1 as tf1
 import numpy as np
 from tensorflow.python.lib.io import file_io
 
@@ -53,7 +54,7 @@ def assert_rank(tensor, expected_rank, name=None):
 
     actual_rank = tensor.shape.ndims
     if actual_rank not in expected_rank_dict:
-        scope_name = tf.get_variable_scope().name
+        scope_name = tf1.get_variable_scope().name
         raise ValueError(
             "For the tensor `%s` in scope `%s`, the actual rank "
             "`%d` (shape = %s) is not equal to the expected rank `%s`" %
@@ -91,7 +92,7 @@ def get_shape_list(tensor, expected_rank=None, name=None):
     if not non_static_indexes:
         return shape
 
-    dyn_shape = tf.shape(tensor)
+    dyn_shape = tf1.shape(tensor)
     for index in non_static_indexes:
         shape[index] = dyn_shape[index]
     return shape
@@ -109,20 +110,20 @@ def gelu(input_tensor):
     Returns:
       `input_tensor` with the GELU activation applied.
     """
-    cdf = 0.5 * (1.0 + tf.erf(input_tensor / tf.sqrt(2.0)))
+    cdf = 0.5 * (1.0 + tf.math.erf(input_tensor / tf.math.sqrt(2.0)))
     return input_tensor * cdf
 
 
 def layer_norm(input_tensor, name=None, epsilon=1e-5):
     """Run layer normalization on the last dimension of the tensor."""
     name2use = f'LayerNorm_{name}' if name is not None else name
-    with tf.variable_scope(name2use, default_name='LayerNorm'):
+    with tf1.variable_scope(name2use, default_name='LayerNorm'):
         dim = input_tensor.shape[-1].value
-        gamma = tf.get_variable('gamma', [dim], initializer=tf.constant_initializer(1))
-        beta = tf.get_variable('beta', [dim], initializer=tf.constant_initializer(0))
-        mean = tf.reduce_mean(input_tensor, axis=-1, keepdims=True)
-        std = tf.reduce_mean(tf.square(input_tensor - mean), axis=-1, keepdims=True)
-        input_tensor = (input_tensor - mean) * tf.rsqrt(std + epsilon)
+        gamma = tf1.get_variable('gamma', [dim], initializer=tf1.constant_initializer(1))
+        beta = tf1.get_variable('beta', [dim], initializer=tf1.constant_initializer(0))
+        mean = tf.math.reduce_mean(input_tensor, axis=-1, keepdims=True)
+        std = tf.math.reduce_mean(tf.math.square(input_tensor - mean), axis=-1, keepdims=True)
+        input_tensor = (input_tensor - mean) * tf.math.rsqrt(std + epsilon)
         input_tensor = input_tensor * gamma + beta
     return input_tensor
 
@@ -149,8 +150,8 @@ def get_attention_mask(nd, ns, *, dtype):
     this is a TPU compatible version of tf.matrix_band_part(tf.ones([nd, ns]), -1, ns-nd)
     where the lower right triangle contains 1s
     """
-    i = tf.range(nd)[:, None]
-    j = tf.range(ns)
+    i = tf.ragged.range(nd)[:, None]
+    j = tf.ragged.range(ns)
     m = i >= j - ns + nd
     return tf.cast(m, dtype)
 
@@ -214,21 +215,21 @@ def construct_scalar_host_call(metric_dict, model_dir, prefix=""):
           List of summary ops to run on the CPU host.
         """
         step = global_step[0]
-        with tf.contrib.summary.create_file_writer(
+        with tf.summary.create_file_writer(
                 logdir=model_dir, filename_suffix=".host_call").as_default():
-            with tf.contrib.summary.always_record_summaries():
+            with tf.summary.should_record_summaries():
                 for i, name in enumerate(metric_names):
-                    tf.contrib.summary.scalar(prefix + name, args[i][0], step=step)
+                    tf1.summary.scalar(prefix + name, args[i][0], step=step)
 
-                return tf.contrib.summary.all_summary_ops()
+                return tf1.summary.all_v2_summary_ops()
 
     # To log the current learning rate, and gradient norm for Tensorboard, the
     # summary op needs to be run on the host CPU via host_call. host_call
     # expects [batch_size, ...] Tensors, thus reshape to introduce a batch
     # dimension. These Tensors are implicitly concatenated to
     # [params['batch_size']].
-    global_step_tensor = tf.reshape(
+    global_step_tensor = tf1.manip.reshape(
         tf.compat.v1.train.get_or_create_global_step(), [1])
-    other_tensors = [tf.reshape(metric_dict[key], [1]) for key in metric_names]
+    other_tensors = [tf.manip.reshape(metric_dict[key], [1]) for key in metric_names]
 
     return host_call_fn, [global_step_tensor] + other_tensors

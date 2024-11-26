@@ -19,6 +19,7 @@ import math
 
 import six
 import tensorflow as tf
+import tensorflow.compat.v1 as tf1
 
 from lm import optimization_adafactor
 from lm.utils import get_assignment_map_from_checkpoint, get_shape_list, get_attention_mask, gelu, layer_norm, dropout, \
@@ -638,7 +639,7 @@ def model_fn_builder(config: GroverConfig, init_checkpoint, learning_rate,
         # need to find it no updates found
         if mode == tf.estimator.ModeKeys.TRAIN:
             if use_tpu:
-                output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+                output_spec = tf1.estimator.tpu.TPUEstimatorSpec(
                     mode=mode,
                     loss=total_loss,
                     train_op=train_op,
@@ -646,7 +647,7 @@ def model_fn_builder(config: GroverConfig, init_checkpoint, learning_rate,
                                                          prefix='training/'),
                     scaffold_fn=scaffold_fn)
             else:
-                output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+                output_spec = tf1.estimator.tpu.TPUEstimatorSpec(
                     mode=mode,
                     loss=total_loss,
                     train_op=train_op,
@@ -663,7 +664,7 @@ def model_fn_builder(config: GroverConfig, init_checkpoint, learning_rate,
 
             eval_metrics = (metric_fn,
                             [total_loss])
-            output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+            output_spec = tf1.estimator.tpu.TPUEstimatorSpec(
                 mode=mode,
                 loss=total_loss,
                 eval_metrics=eval_metrics,
@@ -690,7 +691,7 @@ def model_fn_builder(config: GroverConfig, init_checkpoint, learning_rate,
                 )
             pred_logprobs = tf.compat.v1.squeeze(tf.compat.v1.batch_gather(model.log_probs, predictions[:, :, None]), axis=2)
 
-            output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+            output_spec = tf1.estimator.tpu.TPUEstimatorSpec(
                 mode=mode,
                 predictions={'gt_logprobs': gt_logprobs,
                              'top_p_required': top_p_required,
@@ -904,7 +905,8 @@ def classification_model_fn_builder(config: GroverConfig, init_checkpoint, learn
         # need to find this no update found
         if mode == tf.estimator.ModeKeys.TRAIN:
             if use_tpu:
-                output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+                # from here 
+                output_spec = tf1.estimator.tpu.TPUEstimatorSpec(
                     mode=mode,
                     loss=total_loss,
                     train_op=train_op,
@@ -912,14 +914,14 @@ def classification_model_fn_builder(config: GroverConfig, init_checkpoint, learn
                                                          prefix='training/'),
                     scaffold_fn=scaffold_fn)
             else:
-                output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+                output_spec = tf1.estimator.tpu.TPUEstimatorSpec(
                     mode=mode,
                     loss=total_loss,
                     train_op=train_op,
                     training_hooks=[
                         tf.compat.v1.train.LoggingTensorHook({'loss': tf.compat.v1.metrics.mean(total_loss)[1]}, every_n_iter=100)],
                     scaffold_fn=scaffold_fn)
-
+                    # to here
         elif mode == tf.estimator.ModeKeys.EVAL:
             def metric_fn(per_example_loss, label_ids, logits, is_real_example):
                 predictions = tf.math.argmax(logits, axis=-1, output_type=tf.int32)
@@ -930,16 +932,16 @@ def classification_model_fn_builder(config: GroverConfig, init_checkpoint, learn
                     "eval_accuracy": accuracy,
                     "eval_loss": loss,
                 }
-
+            # from here 
             eval_metrics = (metric_fn,
                             [per_example_loss, label_ids, logits, is_real_example])
-            output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+            output_spec = tf1.estimator.tpu.TPUEstimatorSpec(
                 mode=mode,
                 loss=total_loss,
                 eval_metrics=eval_metrics,
                 scaffold_fn=scaffold_fn)
         else:
-            output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+            output_spec = tf1.estimator.tpu.TPUEstimatorSpec(
                 mode=mode,
                 predictions={'logits': logits,
                              'probs': tf.nn.softmax(logits, axis=-1)},
@@ -947,3 +949,4 @@ def classification_model_fn_builder(config: GroverConfig, init_checkpoint, learn
         return output_spec
 
     return model_fn
+     # to here

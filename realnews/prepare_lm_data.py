@@ -82,14 +82,14 @@ class S3TFRecordWriter(object):
             self.s3client = boto3.client('s3',
                                          )
             self.storage_dir = TemporaryDirectory()
-            self.writer = tf.python_io.TFRecordWriter(os.path.join(self.storage_dir.name, 'temp.tfrecord'))
+            self.writer = tf.io.TFRecordWriter(os.path.join(self.storage_dir.name, 'temp.tfrecord'))
             self.bucket_name, self.file_name = self.fn.split('s3://', 1)[1].split('/', 1)
         elif fn.startswith('gs://'):
             from google.cloud import storage
             self.s3client = None
             self.gclient = storage.Client()
             self.storage_dir = TemporaryDirectory()
-            self.writer = tf.python_io.TFRecordWriter(os.path.join(self.storage_dir.name, 'temp.tfrecord'))
+            self.writer = tf.io.TFRecordWriter(os.path.join(self.storage_dir.name, 'temp.tfrecord'))
             self.bucket_name, self.file_name = self.fn.split('gs://', 1)[1].split('/', 1)
 
         else:
@@ -98,7 +98,7 @@ class S3TFRecordWriter(object):
             self.bucket_name = None
             self.file_name = None
             self.storage_dir = None
-            self.writer = tf.python_io.TFRecordWriter(fn)
+            self.writer = tf.io.TFRecordWriter(fn)
 
     def write(self, x):
         self.writer.write(x)

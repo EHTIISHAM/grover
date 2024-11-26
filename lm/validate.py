@@ -16,13 +16,14 @@
 import os
 from lm.modeling import model_fn_builder, GroverConfig
 import tensorflow as tf
+import tensorflow.compat.v1 as tf1
 from lm.dataloader import input_fn_builder
 import numpy as np
 import tempfile
 import h5py
 from google.cloud import storage
 
-flags = tf.flags
+flags = tf1.flags
 
 FLAGS = flags.FLAGS
 
@@ -126,20 +127,20 @@ def ind_where(array: np.ndarray, target, return_first_match=True, default_value=
 
 
 def main(_):
-    tf.logging.set_verbosity(tf.logging.INFO)
+    tf1.logging.set_verbosity(tf1.logging.INFO)
 
     news_config = GroverConfig.from_json_file(FLAGS.config_file)
 
-    tf.gfile.MakeDirs(FLAGS.output_dir)
+    tf1.gfile.MakeDirs(FLAGS.output_dir)
 
     input_files = []
     for input_pattern in FLAGS.input_file.split(","):
-        input_files.extend(tf.gfile.Glob(input_pattern))
+        input_files.extend(tf1.gfile.Glob(input_pattern))
 
-    tf.logging.info("*** Input Files ***")
+    tf1.logging.info("*** Input Files ***")
     for input_file in input_files:
-        tf.logging.info("  %s" % input_file)
-
+        tf1.logging.info("  %s" % input_file)
+    # from here
     tpu_cluster_resolver = None
     if FLAGS.use_tpu and FLAGS.tpu_name:
         tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
@@ -176,7 +177,7 @@ def main(_):
         predict_batch_size=FLAGS.batch_size,
         params={'model_dir': FLAGS.output_dir}
     )
-
+    # to here 
     eval_input_fn = input_fn_builder(
         input_files=input_files,
         seq_length=FLAGS.max_seq_length,
@@ -211,4 +212,4 @@ def main(_):
 if __name__ == "__main__":
     flags.mark_flag_as_required("input_file")
     flags.mark_flag_as_required("output_dir")
-    tf.app.run()
+    tf1.app.run()

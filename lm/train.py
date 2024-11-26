@@ -16,11 +16,12 @@
 """ Training script! """
 
 import tensorflow as tf
+import tensorflow.compat.v1 as tf1
 
 from lm.dataloader import input_fn_builder
 from lm.modeling import model_fn_builder, GroverConfig
 
-flags = tf.flags
+flags = tf1.flags
 
 FLAGS = flags.FLAGS
 
@@ -93,25 +94,25 @@ flags.DEFINE_integer(
 
 
 def main(_):
-    tf.logging.set_verbosity(tf.logging.INFO)
+    tf1.logging.set_verbosity(tf1.logging.INFO)
 
     news_config = GroverConfig.from_json_file(FLAGS.config_file)
 
-    tf.gfile.MakeDirs(FLAGS.output_dir)
+    tf1.gfile.MakeDirs(FLAGS.output_dir)
 
     input_files = []
     for input_pattern in FLAGS.input_file.split(","):
-        input_files.extend(tf.gfile.Glob(input_pattern))
+        input_files.extend(tf1.gfile.Glob(input_pattern))
 
-    tf.logging.info("*** Input Files ***")
+    tf1.logging.info("*** Input Files ***")
     for input_file in input_files:
-        tf.logging.info("  %s" % input_file)
+        tf1.logging.info("  %s" % input_file)
 
     tpu_cluster_resolver = None
     if FLAGS.use_tpu and FLAGS.tpu_name:
-        tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
+        tpu_cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
             FLAGS.tpu_name, zone=FLAGS.tpu_zone, project=FLAGS.gcp_project)
-
+    # from here 
     is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
     run_config = tf.contrib.tpu.RunConfig(
         cluster=tpu_cluster_resolver,
@@ -141,9 +142,9 @@ def main(_):
         eval_batch_size=FLAGS.train_batch_size,
         params={'model_dir': FLAGS.output_dir}
     )
-
-    tf.logging.info("***** Running training *****")
-    tf.logging.info("  Batch size = %d", FLAGS.train_batch_size)
+    # to here 
+    tf1.logging.info("***** Running training *****")
+    tf1.logging.info("  Batch size = %d", FLAGS.train_batch_size)
     train_input_fn = input_fn_builder(
         input_files=input_files,
         seq_length=FLAGS.max_seq_length,
@@ -154,4 +155,4 @@ def main(_):
 if __name__ == "__main__":
     flags.mark_flag_as_required("input_file")
     flags.mark_flag_as_required("output_dir")
-    tf.app.run()
+    tf1.app.run()

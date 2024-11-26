@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow.compat.v1 as tf1
 import numpy as np
 import sys
 import json
@@ -101,19 +102,19 @@ top_p = np.ones((num_chunks, batch_size_per_chunk), dtype=np.float32) * args.top
 with open(args.metadata_fn, 'r') as f:
     articles = [json.loads(l) for i, l in enumerate(f) if i % args.num_folds == args.fold]
 
-tf_config = tf.ConfigProto(allow_soft_placement=True)
+tf_config = tf1.ConfigProto(allow_soft_placement=True)
 
-with tf.Session(config=tf_config, graph=tf.Graph()) as sess, \
+with tf1.Session(config=tf_config, graph=tf.Graph()) as sess, \
         open(args.out_fn, 'w') as f_out:
-    initial_context = tf.placeholder(tf.int32, [batch_size_per_chunk, None])
-    p_for_topp = tf.placeholder(tf.float32, [batch_size_per_chunk])
-    eos_token = tf.placeholder(tf.int32, [])
-    ignore_ids = tf.placeholder(tf.bool, [news_config.vocab_size])
+    initial_context = tf1.placeholder(tf.int32, [batch_size_per_chunk, None])
+    p_for_topp = tf1.placeholder(tf.float32, [batch_size_per_chunk])
+    eos_token = tf1.placeholder(tf.int32, [])
+    ignore_ids = tf1.placeholder(tf.bool, [news_config.vocab_size])
     tokens, probs = sample(news_config=news_config, initial_context=initial_context,
                            eos_token=eos_token, ignore_ids=ignore_ids, p_for_topp=p_for_topp,
                            do_topk=False)
 
-    saver = tf.train.Saver()
+    saver = tf1.train.Saver()
     saver.restore(sess, args.model_ckpt)
 
     # Let's go!
