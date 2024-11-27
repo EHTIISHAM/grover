@@ -3,6 +3,6 @@ regex
 h5py
 numpy==1.26.3
 tensorboard
-tensorflow-gpu==2.16.1
+tensorflow==2.16.1
 tqdm
 requests
